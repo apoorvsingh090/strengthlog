@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an improvement or new capability
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Describe the feature
+      description: What should the app be able to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Use case
+      description: Why is this useful for a local-only strength tracker?
+      placeholder: Rest-timer notifications between sets.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds or other approaches you've thought about.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and discussions for duplicates
+          required: true
+        - label: This fits the offline, no-account philosophy of the app
+          required: true

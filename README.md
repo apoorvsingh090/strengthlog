@@ -1,5 +1,9 @@
 # StrengthLog
 
+[![CI](https://img.shields.io/github/actions/workflow/status/apoorvsingh090/strengthlog/ci.yml?branch=main)](https://github.com/apoorvsingh090/strengthlog/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![tests](https://img.shields.io/badge/tests-12%20unit%20tests-brightgreen.svg)](app/src/test)
+
 A local-only Android strength-training tracker: log workouts, build templates, and track your powerlifting level — no account, no internet access, no data leaves your device.
 
 Clones the core of [my.strengthlevel.com](https://my.strengthlevel.com) as a native app.
@@ -47,6 +51,20 @@ Re-importing the same file is idempotent: imports are skipped by per-workout con
 - No `INTERNET` permission — the app is offline by construction
 - Everything lives in `lolmax.db` (Room) on-device
 - CSV export writes via the Storage Access Framework to a location you pick
+
+## Contributing
+
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
+branch/PR conventions, and Room schema rules. Please read the
+[Code of Conduct](CODE_OF_CONDUCT.md) first, and use the issue templates for
+bugs and feature ideas. Good first issues are labelled
+[`good first issue`](https://github.com/apoorvsingh090/strengthlog/labels/good%20first%20issue).
+
+## Security
+
+Report vulnerabilities privately via
+[GitHub Security Advisories](https://github.com/apoorvsingh090/strengthlog/security/advisories);
+see [SECURITY.md](SECURITY.md).
 
 ## License
 
