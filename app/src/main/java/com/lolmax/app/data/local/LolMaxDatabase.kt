@@ -11,6 +11,7 @@ import com.lolmax.app.data.local.dao.SetDao
 import com.lolmax.app.data.local.dao.TemplateDao
 import com.lolmax.app.data.local.dao.TemplateExerciseDao
 import com.lolmax.app.data.local.dao.TemplateSetDao
+import com.lolmax.app.data.local.dao.TemplateStatsDao
 import com.lolmax.app.data.local.dao.UserProfileDao
 import com.lolmax.app.data.local.dao.WorkoutDao
 import com.lolmax.app.data.local.dao.WorkoutExerciseDao
@@ -49,6 +50,7 @@ abstract class LolMaxDatabase : RoomDatabase() {
     abstract fun templateDao(): TemplateDao
     abstract fun templateExerciseDao(): TemplateExerciseDao
     abstract fun templateSetDao(): TemplateSetDao
+    abstract fun templateStatsDao(): TemplateStatsDao
     abstract fun goalDao(): GoalDao
 
     companion object {
@@ -67,9 +69,9 @@ abstract class LolMaxDatabase : RoomDatabase() {
                 LolMaxDatabase::class.java,
                 "lolmax.db"
             )
-                // Local-only app: on a schema version bump (no migrations authored yet),
-                // rebuild rather than crash with IllegalStateException.
-                .fallbackToDestructiveMigration()
+                // Local-only app. NO fallbackToDestructiveMigration(): an unmigrated
+                // schema bump must fail loudly, never silently wipe a user's history.
+                // Author a Migration in lockstep with every entity change (see CONTRIBUTING).
                 .build()
             // Seed exercise catalog on first launch (async, idempotent).
             SeedingCoroutine.start(context.applicationContext, db)

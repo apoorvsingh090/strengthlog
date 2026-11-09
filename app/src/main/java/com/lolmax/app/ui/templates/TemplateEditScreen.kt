@@ -162,7 +162,7 @@ fun TemplateEditScreen(
                                         it.copy(weightText = v)
                                     }
                                 },
-                                label = { Text("kg (opt)") },
+                                label = { Text("${state.weightUnit} (optional)") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),

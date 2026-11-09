@@ -211,8 +211,13 @@ class SettingsViewModel(
                     " (${result.skippedDates} dates already imported, skipped)" else ""
                 val custom = if (result.unknownExercises.isNotEmpty())
                     ". New custom exercises: ${result.unknownExercises.joinToString(", ")}" else ""
+                val errs = if (result.errors.isNotEmpty()) {
+                    val shown = result.errors.take(3).joinToString("; ")
+                    val more = if (result.errors.size > 3) " (+${result.errors.size - 3} more)" else ""
+                    " Errors: $shown$more"
+                } else ""
                 importStatus.value =
-                    "Imported ${result.workoutsImported} workouts, ${result.setsImported} sets$skipped$custom"
+                    "Imported ${result.workoutsImported} workouts, ${result.setsImported} sets$skipped$custom$errs"
             } catch (e: Exception) {
                 importStatus.value = "Import failed: ${e.message}"
             } finally {

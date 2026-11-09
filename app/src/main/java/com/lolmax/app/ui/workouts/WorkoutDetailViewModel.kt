@@ -116,8 +116,7 @@ class WorkoutDetailViewModel(
             totalReps += working.sumOf { it.reps }
             totalVolume += working.sumOf { (it.weightKg ?: 0.0) * it.reps }
 
-            val stdThresholds =
-                standardsRepository.getThresholds(ewe.exercise.exerciseId, isMale, bw)
+            val std = standardsRepository.getThresholds(ewe.exercise.exerciseId, isMale, bw)
             val bestSet =
                 working.maxByOrNull { OneRepMax.estimate(it.weightKg ?: 0.0, it.reps) }
             val bestLabel = if (bestSet == null) "—" else {
@@ -128,10 +127,11 @@ class WorkoutDetailViewModel(
 
             val rows = ewe.sets.map { s ->
                 val orm = OneRepMax.estimate(s.weightKg ?: 0.0, s.reps)
-                val level = if (s.isWarmup || stdThresholds == null) null
-                else StandardsEngine.levelFor(orm, stdThresholds)
-                val percentile = if (s.isWarmup || stdThresholds == null) null
-                else StandardsEngine.percentileFor(orm, stdThresholds)
+                val stdMetric = if (std?.type == "reps") s.reps.toDouble() else orm
+                val level = if (s.isWarmup || std == null) null
+                else StandardsEngine.levelFor(stdMetric, std.thresholds)
+                val percentile = if (s.isWarmup || std == null) null
+                else StandardsEngine.percentileFor(stdMetric, std.thresholds)
                 val pct = if (s.isWarmup) null else OneRepMax.percentOf1rm(s.reps).toInt()
                 DetailSetRow(
                     weightLabel = if (exercise?.isBodyweight == true && (s.weightKg

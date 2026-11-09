@@ -144,3 +144,22 @@ class CsvParseTest {
         assertEquals(true, rows[0].isWarmup)
     }
 }
+
+class RepsStandardsTest {
+    private val pullUps = LevelThresholds(1.0, 5.0, 10.0, 15.0, 20.0) // male pull-ups
+
+    @Test
+    fun `level measured in reps for bodyweight movements`() {
+        assertEquals(LiftingLevel.NOVICE, StandardsEngine.levelFor(8.0, pullUps))
+        assertEquals(LiftingLevel.INTERMEDIATE, StandardsEngine.levelFor(10.0, pullUps))
+        assertEquals(LiftingLevel.ELITE, StandardsEngine.levelFor(25.0, pullUps))
+    }
+
+    @Test
+    fun `percentile monotonic in reps`() {
+        val p5 = StandardsEngine.percentileFor(1.0, pullUps)
+        val p10 = StandardsEngine.percentileFor(10.0, pullUps)
+        val p20 = StandardsEngine.percentileFor(20.0, pullUps)
+        assertTrue(p5 < p10 && p10 < p20)
+    }
+}

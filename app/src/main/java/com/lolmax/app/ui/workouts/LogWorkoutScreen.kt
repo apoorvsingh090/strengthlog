@@ -199,7 +199,7 @@ fun LogWorkoutScreen(
                 }
             }
 
-            itemsIndexed(state.exercises, key = { i, ex -> "${ex.exerciseId}-$i" }) { exIndex, ex ->
+            itemsIndexed(state.exercises, key = { _, ex -> ex.rowId }) { exIndex, ex ->
                 ExerciseLogCard(
                     ex = ex,
                     exIndex = exIndex,

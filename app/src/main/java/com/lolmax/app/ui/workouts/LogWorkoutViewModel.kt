@@ -33,6 +33,9 @@ data class ExerciseInput(
     val lastWeightText: String = "",
     val lastRepsText: String = "",
     val sets: MutableList<SetInput> = mutableListOf(),
+    /** Stable, per-session-unique id for LazyColumn keys (removal reindexes would
+     * otherwise re-key every card and drop its compose state). */
+    val rowId: Long = 0,
 )
 
 data class LogWorkoutUiState(
@@ -65,6 +68,8 @@ class LogWorkoutViewModel(
     val uiState: StateFlow<LogWorkoutUiState> = _state
 
     private var loaded = false
+    private var rowCounter = 0L
+    private fun nextRowId(): Long = ++rowCounter
 
     fun init(workoutId: String?, templateId: String?) {
         if (loaded) return
@@ -102,6 +107,7 @@ class LogWorkoutViewModel(
                 name = ex?.name ?: te.exercise.exerciseId,
                 isBodyweight = ex?.isBodyweight == true,
                 sets = sets,
+                rowId = nextRowId(),
             )
         }
         _state.update {
@@ -130,6 +136,7 @@ class LogWorkoutViewModel(
                         isWarmup = it.isWarmup,
                     )
                 }.toMutableList().apply { if (isEmpty()) add(SetInput()) },
+                rowId = nextRowId(),
             )
         }
         _state.update {
@@ -192,6 +199,7 @@ class LogWorkoutViewModel(
                         lastWeightText = Units.kgToNumber(weightSource, unit),
                         lastRepsText = repsSource?.toString() ?: "",
                         sets = mutableListOf(prefilled),
+                        rowId = nextRowId(),
                     ),
                 )
             }

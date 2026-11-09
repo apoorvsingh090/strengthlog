@@ -68,17 +68,18 @@ class StatsRepository(
         val profile = profileRepository.getProfile()
         val isMale = profile.gender == "MALE"
         val bodyweightKg = profile.bodyweightKg
-        val thresholds = standardsRepository.getThresholds(exerciseId, isMale, bodyweightKg)
+        val standards = standardsRepository.getThresholds(exerciseId, isMale, bodyweightKg)
 
         val since = windowSince(window)
         val workoutExercises = workoutExerciseDao.getByExercise(exerciseId)
         if (workoutExercises.isEmpty()) {
             return ExerciseReport(0.0, null, null, null, emptyList(), 0)
         }
-        val workoutsById = workoutExercises
-            .mapNotNull { we -> workoutDao.getById(we.workoutId) }
-            .filter { w -> since == null || w.dateEpochDay >= since }
-            .associateBy { it.id }
+        val distinctIds = workoutExercises.map { it.workoutId }.toSet().toList()
+        val workoutsById = if (distinctIds.isEmpty()) emptyMap() else
+            workoutDao.getByIds(distinctIds)
+                .filter { w -> since == null || w.dateEpochDay >= since }
+                .associateBy { it.id }
         val relevantWe = workoutExercises.filter { it.workoutId in workoutsById }
         if (relevantWe.isEmpty()) {
             return ExerciseReport(0.0, null, null, null, emptyList(), 0)
@@ -93,8 +94,13 @@ class StatsRepository(
             if (sets.isEmpty()) return@mapNotNull null
             val stats = aggregate(sets.map { SetEntry(it.weightKg, it.reps, false) })
             if (stats.workingSetCount == 0) return@mapNotNull null
-            val level = thresholds?.let { StandardsEngine.levelFor(stats.bestOneRmKg, it) }
-            val percentile = thresholds?.let { StandardsEngine.percentileFor(stats.bestOneRmKg, it) }
+            // Ratio standards compare against 1RM; rep standards compare against best reps.
+            val metric = if (standards?.type == "reps") stats.bestReps.toDouble()
+            else stats.bestOneRmKg
+            val level = standards?.let { StandardsEngine.levelFor(metric, it.thresholds) }
+            val percentile = standards?.let {
+                StandardsEngine.percentileFor(metric, it.thresholds)
+            }
             ExercisePoint(
                 dateEpochDay = workout.dateEpochDay,
                 oneRmKg = stats.bestOneRmKg,
@@ -157,8 +163,9 @@ class StatsRepository(
         for (slug in listOf("squat", "bench-press", "deadlift")) {
             val exercise = exerciseRepository.findBySlug(slug) ?: continue
             val wes = workoutExerciseDao.getByExercise(exercise.id)
-            val workouts = wes.mapNotNull { workoutDao.getById(it.workoutId) }
-                .associateBy { it.id }
+            val byId = if (wes.isEmpty()) emptyMap() else
+                workoutDao.getByIds(wes.map { it.workoutId }.toSet().toList()).associateBy { it.id }
+            val workouts = byId
             val cutoff = LocalDate.now().minusWeeks(12).toEpochDay()
             val recentWes = wes.filter { (workouts[it.workoutId]?.dateEpochDay ?: 0) >= cutoff }
             if (recentWes.isEmpty()) continue

@@ -77,6 +77,8 @@ class CsvImporter(
         val setsImported: Int,
         val unknownExercises: List<String>,
         val skippedDates: Int = 0,
+        // Non-fatal problems: unparseable rows, skipped duplicates, etc.
+        val errors: List<String> = emptyList(),
     )
 
     data class NativeRow(
@@ -113,7 +115,7 @@ class CsvImporter(
         header: List<String>,
         repo: WorkoutRepository,
     ): ImportResult {
-        val (rows, _) = parseNativeRows(records, header)
+        val (rows, errors) = parseNativeRows(records, header)
         if (rows.isEmpty()) return ImportResult(0, 0, emptyList())
 
         val byName = exerciseRepository.getAll()
@@ -175,7 +177,8 @@ class CsvImporter(
             )
             workoutsImported++
         }
-        return ImportResult(workoutsImported, setsImported, createdCustom.toList(), skippedDates)
+        return ImportResult(workoutsImported, setsImported, createdCustom.toList(),
+            skippedDates, errors.toList())
     }
 
     /**
@@ -295,17 +298,26 @@ class CsvImporter(
 
         val rows = mutableListOf<Row>()
         val unknown = linkedSetOf<String>()
+        val errors = linkedSetOf<String>()
         for (record in records.drop(1)) {
             val parts = parse(record)
             fun cell(i: Int) = parts.getOrNull(i)?.trim().orEmpty()
             val date =
-                try { LocalDate.parse(cell(dateCol)) } catch (_: Exception) { continue }
+                try {
+                    LocalDate.parse(cell(dateCol))
+                } catch (_: Exception) {
+                    errors += "bad date: ${cell(dateCol).take(20)}"
+                    continue
+                }
             val title = cell(titleCol).ifBlank { "Workout" }
             val bw = cell(bwCol).toDoubleOrNull()?.takeIf { it >= 0 }
             val exName = cell(exCol)
             val weight = cell(weightCol).toDoubleOrNull()?.takeIf { it >= 0 }
-            val reps = cell(repsCol).toIntOrNull() ?: continue
-            if (reps <= 0) continue
+            val reps = cell(repsCol).toIntOrNull()
+            if (reps == null || reps <= 0) {
+                errors += "bad reps in row for $exName"
+                continue
+            }
             val warmup = cell(warmupCol).let { it == "1" || it.equals("true", true) }
             val duration = cell(durationCol).toIntOrNull()
             val startMinute = cell(startCol).toIntOrNull()?.coerceIn(0, 1439)
@@ -364,7 +376,8 @@ class CsvImporter(
             )
             workoutsImported++
         }
-        return ImportResult(workoutsImported, setsImported, unknown.toList(), skippedDates)
+        return ImportResult(workoutsImported, setsImported, unknown.toList(),
+            skippedDates, errors.toList())
     }
 
     /** RFC-4180-ish CSV line parser supporting quoted fields. */

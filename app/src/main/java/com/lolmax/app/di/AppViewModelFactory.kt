@@ -27,7 +27,11 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
             modelClass.isAssignableFrom(TemplatesViewModel::class.java) ->
                 TemplatesViewModel(container.templateRepository) as T
             modelClass.isAssignableFrom(TemplateEditViewModel::class.java) ->
-                TemplateEditViewModel(container.templateRepository, container.exerciseRepository) as T
+                TemplateEditViewModel(
+                    container.templateRepository,
+                    container.exerciseRepository,
+                    container.profileRepository,
+                ) as T
             modelClass.isAssignableFrom(ExercisesViewModel::class.java) ->
                 ExercisesViewModel(container.exerciseRepository, container.templateRepository, container.profileRepository) as T
             modelClass.isAssignableFrom(ExerciseReportViewModel::class.java) ->

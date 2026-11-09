@@ -22,6 +22,12 @@ class StandardsRepository(private val context: Context) {
         val perDumbbell: Boolean = false,
     )
 
+    /** Resolved standards for one exercise: `type` is "ratio" or "reps". */
+    data class ExerciseStandards(
+        val type: String,
+        val thresholds: LevelThresholds,
+    )
+
     private val cache = AtomicReference<Map<String, StandardsEntry>?>(null)
 
     private suspend fun load(): Map<String, StandardsEntry> {
@@ -60,7 +66,7 @@ class StandardsRepository(private val context: Context) {
         exerciseId: String,
         isMale: Boolean,
         bodyweightKg: Double,
-    ): LevelThresholds? {
+    ): ExerciseStandards? {
         val entry = load()[exerciseId] ?: return null
         val raw = if (isMale) entry.male else entry.female
         if (raw.size != 5) return null
@@ -69,6 +75,9 @@ class StandardsRepository(private val context: Context) {
         } else {
             raw
         }
-        return LevelThresholds(values[0], values[1], values[2], values[3], values[4])
+        return ExerciseStandards(
+            entry.type,
+            LevelThresholds(values[0], values[1], values[2], values[3], values[4]),
+        )
     }
 }

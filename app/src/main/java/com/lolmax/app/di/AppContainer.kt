@@ -33,6 +33,7 @@ class AppContainer(context: Context) {
             database.templateDao(),
             database.templateExerciseDao(),
             database.templateSetDao(),
+            database.templateStatsDao(),
             exerciseRepository
         )
     val statsRepository: StatsRepository =

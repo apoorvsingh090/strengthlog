@@ -4,11 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lolmax.app.data.local.entities.Exercise
 import com.lolmax.app.data.repository.ExerciseRepository
+import com.lolmax.app.data.repository.ProfileRepository
 import com.lolmax.app.data.repository.TemplateDraft
 import com.lolmax.app.data.repository.TemplateExerciseDraft
 import com.lolmax.app.data.repository.TemplateRepository
 import com.lolmax.app.data.repository.TemplateSetDraft
-import com.lolmax.app.data.repository.WorkoutRepository
+import com.lolmax.app.ui.util.Units
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,15 +48,15 @@ class TemplatesViewModel(
     private val _details = MutableStateFlow<Map<String, Pair<Int, Int>>>(emptyMap())
 
     init {
+        // One grouped SQL query for exercise/set counts (never N+1 per template).
         viewModelScope.launch {
             templateRepository.observeTemplates().collect { templates ->
-                val map = templates.associate { t ->
-                    val detail = templateRepository.getTemplateWithExercises(t.id)
-                    val exCount = detail?.exercises?.size ?: 0
-                    val setCount = detail?.exercises?.sumOf { it.sets.size } ?: 0
-                    t.id to (exCount to setCount)
+                val ids = templates.map { it.id }
+                val rows = templateRepository.countsByIds(ids)
+                _details.value = ids.associateWith { id ->
+                    val c = rows[id]
+                    (c?.exerciseCount ?: 0) to (c?.setCount ?: 0)
                 }
-                _details.value = map
             }
         }
     }
@@ -94,11 +95,13 @@ data class TemplateEditUiState(
     val saving: Boolean = false,
     val error: String? = null,
     val templateId: String? = null,
+    val weightUnit: String = "kg",
 )
 
 class TemplateEditViewModel(
     private val templateRepository: TemplateRepository,
     private val exerciseRepository: ExerciseRepository,
+    private val profileRepository: ProfileRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TemplateEditUiState())
@@ -109,6 +112,11 @@ class TemplateEditViewModel(
     fun init(templateId: String?) {
         if (loaded) return
         loaded = true
+        viewModelScope.launch {
+            val unit = runCatching { profileRepository.getProfile().weightUnit }
+                .getOrDefault("kg")
+            _state.update { it.copy(weightUnit = unit) }
+        }
         _state.update { it.copy(templateId = templateId) }
         if (templateId == null) return
         viewModelScope.launch {
@@ -120,7 +128,7 @@ class TemplateEditViewModel(
                     name = ex?.name ?: te.exercise.exerciseId,
                     sets = te.sets.map {
                         TemplateSetInput(
-                            weightText = it.weightKg?.toString() ?: "",
+                            weightText = Units.kgToNumber(it.weightKg, _state.value.weightUnit),
                             repsText = it.reps.toString(),
                             isWarmup = it.isWarmup,
                         )
@@ -207,6 +215,7 @@ class TemplateEditViewModel(
                             if (reps <= 0) return@mapNotNull null
                             val weight = set.weightText.toDoubleOrNull()
                                 ?.takeIf { it >= 0 }
+                                ?.let { Units.displayToKg(it, _state.value.weightUnit) }
                             TemplateSetDraft(weight, reps, set.isWarmup)
                         },
                     )

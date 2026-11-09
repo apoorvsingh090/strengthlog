@@ -75,10 +75,13 @@ interface CustomExerciseDao {
 
 @Dao
 interface WorkoutDao {
-    @Query("SELECT * FROM workouts ORDER BY dateEpochDay DESC, startMinuteOfDay DESC")
+    @Query("SELECT * FROM workouts WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<String>): List<Workout>
+
+    @Query("SELECT * FROM workouts ORDER BY dateEpochDay DESC")
     fun observeAll(): Flow<List<Workout>>
 
-    @Query("SELECT * FROM workouts ORDER BY dateEpochDay ASC")
+    @Query("SELECT * FROM workouts ORDER BY dateEpochDay DESC")
     suspend fun getAllOnce(): List<Workout>
 
     @Query("SELECT * FROM workouts WHERE id = :id")
@@ -167,9 +170,29 @@ interface TemplateDao {
     @Query("DELETE FROM templates WHERE id = :id")
     suspend fun deleteById(id: String)
 
-    @Query("SELECT COALESCE(MAX(orderIndex), -1) + 1 FROM templates")
+@Query("SELECT COALESCE(MAX(orderIndex), -1) + 1 FROM templates")
     suspend fun nextOrderIndex(): Int
 }
+
+@Dao
+interface TemplateStatsDao {
+    @Query(
+        "SELECT te.templateId AS templateId, " +
+            "COUNT(DISTINCT te.id) AS exerciseCount, " +
+            "COUNT(ts.id) AS setCount " +
+            "FROM template_exercises te " +
+            "LEFT JOIN template_sets ts ON ts.templateExerciseId = te.id " +
+            "WHERE te.templateId IN (:ids) GROUP BY te.templateId",
+    )
+    suspend fun countsByIds(ids: List<String>): List<TemplateCounts>
+}
+
+data class TemplateCounts(
+    val templateId: String,
+    val exerciseCount: Int,
+    val setCount: Int,
+)
+
 
 @Dao
 interface TemplateExerciseDao {

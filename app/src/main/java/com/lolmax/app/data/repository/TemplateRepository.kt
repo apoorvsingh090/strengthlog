@@ -5,6 +5,8 @@ import com.lolmax.app.data.local.LolMaxDatabase
 import com.lolmax.app.data.local.dao.TemplateDao
 import com.lolmax.app.data.local.dao.TemplateExerciseDao
 import com.lolmax.app.data.local.dao.TemplateSetDao
+import com.lolmax.app.data.local.dao.TemplateCounts
+import com.lolmax.app.data.local.dao.TemplateStatsDao
 import com.lolmax.app.data.local.entities.Template
 import com.lolmax.app.data.local.entities.TemplateExercise
 import com.lolmax.app.data.local.entities.TemplateSet
@@ -39,6 +41,7 @@ class TemplateRepository(
     private val templateDao: TemplateDao,
     private val templateExerciseDao: TemplateExerciseDao,
     private val templateSetDao: TemplateSetDao,
+    private val templateStatsDao: TemplateStatsDao,
     @Suppress("unused") private val exerciseRepository: ExerciseRepository,
 ) {
     fun observeTemplates(): Flow<List<Template>> = templateDao.observeAll()
@@ -62,6 +65,11 @@ class TemplateRepository(
                     ) { list -> TemplateWithExercises(template, list.toList()) }
                 }
             }
+
+    suspend fun countsByIds(ids: List<String>): Map<String, TemplateCounts> {
+        if (ids.isEmpty()) return emptyMap()
+        return templateStatsDao.countsByIds(ids).associateBy { it.templateId }
+    }
 
     suspend fun getTemplate(id: String): Template? = templateDao.getById(id)
 
